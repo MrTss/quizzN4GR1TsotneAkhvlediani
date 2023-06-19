@@ -1,28 +1,31 @@
-import requests
 from bs4 import BeautifulSoup
-import time
+import requests
+from time import sleep
+import csv
 
-f = open('books.csv', 'w', encoding='utf-8_sig')
-f.write('სათაური,ავტორი,ფასი\n')
+file = open('booksDBase.csv', 'w', newline='\n', encoding='UTF-8_sig')
+csv_obj = csv.writer(file)
+csv_obj.writerow(['name', 'price'])
 
-for i in range(5):
-    url = f'https://www.lit.ge/index.php?page=books&send[shop.catalog][page]={i}'
+url = f'https://biblusi.ge/products?category=291&page=1'
+request = requests.get(url)
+html = request.text
 
-    r = requests.get(url)
-    content = r.text
+soup = BeautifulSoup(html, 'html.parser')
 
-    soup = BeautifulSoup(content, 'html.parser')
-    section = soup.find('section', {'class': 'list-holder'})
-    books = section.find_all('article')
+for num in range(1, 6):
+    url = f'https://biblusi.ge/products?category=291&page={num}'
+    request = requests.get(url)
+    html = request.text
+    soup = BeautifulSoup(html, 'html.parser')
 
-    for book in books:
-        t_bar = book.find('div', {'class': 'title-bar'})
-        title = t_bar.a.text.replace(',', '')
-        author = t_bar.b.a.text
-        price = book.button.text.strip()
+    name = soup.find_all('acronym')
+    price = soup.find_all('div', {'class': 'text-primary font-weight-700'})
 
-        f.write(title + ',' + author + ',' + price + '\n')
-
-    time.sleep(15)
-
-
+    i = 0
+    while True:
+        try:
+            csv_obj.writerow([name[i].text, price[i].text.replace(" ", "").replace("\n", "")])
+            i += 1
+        except IndexError:
+            break
